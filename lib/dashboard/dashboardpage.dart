@@ -1,7 +1,10 @@
+import 'package:calendar_date_picker2/calendar_date_picker2.dart';
 import 'package:flutter/material.dart';
 import 'package:sms/dashboard/sidemenu.dart';
 
 import '../constants.dart';
+
+var today = DateUtils.dateOnly(DateTime.now());
 
 class DashboardPage extends StatefulWidget {
   const DashboardPage({Key? key}) : super(key: key);
@@ -11,8 +14,20 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage> {
-  bool valuefirst = false;
-  bool valuesecond = false;
+  List<DateTime?> _dialogCalendarPickerValue = [
+    DateTime(2022, 9, 1),
+    DateTime(2022, 9, 17),
+  ];
+  String dropdownvalue = 'Select';
+
+  var items = [
+    'Select',
+    'Clothing',
+    'Food',
+    'Travel',
+    'Others',
+  ];
+  final GlobalKey<FormState> formKey = GlobalKey<FormState>();
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,9 +60,8 @@ class _DashboardPageState extends State<DashboardPage> {
           )
         ],
       ),
-      drawer: SideMenu(),
+      drawer: const SideMenu(),
       body: SingleChildScrollView(
-        physics: const BouncingScrollPhysics(),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 24),
           child: Column(
@@ -76,7 +90,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text(
-                    "My Messages",
+                    "Expenses",
                     style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
                   ),
                   Text(
@@ -88,83 +102,244 @@ class _DashboardPageState extends State<DashboardPage> {
               const SizedBox(
                 height: 10,
               ),
-              const SizedBox(
-                height: 15,
-              ),
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15.0),
-                ),
-                color: kLightBlue,
-                elevation: 10,
-                child: Column(
-                  children: [
-                    CheckboxListTile(
-                      secondary: const Icon(Icons.attach_money),
-                      title: const Text('Global IME Bank Pvt. Ltd.'),
-                      subtitle: Text('GBIME_ALERT'),
-                      value: valuefirst,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          valuesecond = value!;
-                        });
-                      },
-                    ),
-                    Divider(),
-                    CheckboxListTile(
-                      controlAffinity: ListTileControlAffinity.trailing,
-                      secondary: const Icon(Icons.attach_money),
-                      title: const Text('Nabil Bank Limited'),
-                      subtitle: Text('NABIL_ALERT'),
-                      value: valuesecond,
-                      onChanged: (bool? value) {
-                        setState(() {
-                          valuesecond = value!;
-                        });
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 8),
-              Column(
-                children: [
-                  Card(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15.0),
-                    ),
-                    color: kLightBlue,
-                    elevation: 10,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.max,
-                      children: <Widget>[
-                        const ListTile(
-                          leading: Icon(Icons.message_rounded, size: 25),
-                          title: Text('Messages List',
-                              style: TextStyle(fontSize: 18.0)),
-                          subtitle: Text('Showing all the messages',
-                              style: TextStyle(fontSize: 14.0)),
-                        ),
-                        ButtonBar(
-                          children: <Widget>[
-                            TextButton(
-                              child: const Text(
-                                'Show',
-                                style: TextStyle(
-                                    color: Colors.black, fontSize: 14),
-                              ),
-                              onPressed: () {/* ... */},
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
+              SingleChildScrollView(
+                child: SizedBox(
+                  width: 375,
+                  height: MediaQuery.of(context).size.height,
+                  child: ListView(
+                    children: <Widget>[
+                      _buildCalendarDialogButton(),
+                      _buildStatementList()
+                    ],
                   ),
-                ],
-              )
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  String _getValueText(
+    CalendarDatePicker2Type datePickerType,
+    List<DateTime?> values,
+  ) {
+    var valueText = (values.isNotEmpty ? values[0] : null)
+        .toString()
+        .replaceAll('00:00:00.000', '');
+
+    if (datePickerType == CalendarDatePicker2Type.range) {
+      if (values.isNotEmpty) {
+        var startDate = values[0].toString().replaceAll('00:00:00.000', '');
+        var endDate = values.length > 1
+            ? values[1].toString().replaceAll('00:00:00.000', '')
+            : 'null';
+        valueText = '$startDate to $endDate';
+      } else {
+        return 'null';
+      }
+    }
+
+    return valueText;
+  }
+
+  _buildCalendarDialogButton() {
+    var config = CalendarDatePicker2WithActionButtonsConfig(
+      calendarType: CalendarDatePicker2Type.range,
+      selectedDayHighlightColor: Colors.teal[800],
+      shouldCloseDialogAfterCancelTapped: true,
+      weekdayLabelTextStyle: const TextStyle(
+        color: Colors.black87,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.all(15),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              primary: Colors.teal[600],
+            ),
+            onPressed: () async {
+              var values = await showCalendarDatePicker2Dialog(
+                context: context,
+                config: config,
+                dialogSize: Size(350, 375),
+                borderRadius: 15,
+                initialValue: _dialogCalendarPickerValue,
+                dialogBackgroundColor: Colors.white,
+                selectableDayPredicate: (day) => !day
+                    .difference(_dialogCalendarPickerValue[0]!
+                        .subtract(const Duration(days: 5)))
+                    .isNegative,
+              );
+              // values == _dialogCalendarPickerValue
+              //     ? _buildStatementList()
+              //     : Text("");
+              if (values != null) {
+                setState(() {
+                  _dialogCalendarPickerValue = values;
+                });
+              }
+            },
+            child: const Text(
+              'Select Date Range',
+              style: TextStyle(fontSize: 16.0),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Selection(s):  '),
+              const SizedBox(width: 10),
+              Text(
+                _getValueText(
+                  config.calendarType,
+                  _dialogCalendarPickerValue,
+                ),
+                style: TextStyle(fontSize: 15.0),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  _buildStatementList() {
+    return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      color: kLightBlue,
+      elevation: 10,
+      child: Column(
+        children: [
+          ListTile(
+            trailing: DropdownButton(
+              value: dropdownvalue,
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: items.map((String items) {
+                return DropdownMenuItem(
+                  value: items,
+                  child: Text(items),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  dropdownvalue != newValue;
+                });
+              },
+            ),
+            title: Text("Date: $today"),
+            subtitle: Text('Amount : 5000'),
+          ),
+          Divider(),
+          ListTile(
+            trailing: DropdownButton(
+              value: dropdownvalue,
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: items.map((String items) {
+                return DropdownMenuItem(
+                  value: items,
+                  child: Text(items),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  dropdownvalue = newValue!;
+                });
+              },
+            ),
+            title: Text("Date: $today"),
+            subtitle: Text('Amount : 5000'),
+          ),
+          Divider(),
+          ListTile(
+            trailing: DropdownButton(
+              value: dropdownvalue,
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: items.map((String items) {
+                return DropdownMenuItem(
+                  value: items,
+                  child: Text(items),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  dropdownvalue = newValue!;
+                });
+              },
+            ),
+            title: Text("Date: $today"),
+            subtitle: Text('Amount : 5000'),
+          ),
+          Divider(),
+          ListTile(
+            trailing: DropdownButton(
+              value: dropdownvalue,
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: items.map((String items) {
+                return DropdownMenuItem(
+                  value: items,
+                  child: Text(items),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  dropdownvalue = newValue!;
+                });
+              },
+            ),
+            title: Text("Date: $today"),
+            subtitle: Text('Amount : 5000'),
+          ),
+          Divider(),
+          ListTile(
+            trailing: DropdownButton(
+              value: dropdownvalue,
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: items.map((String items) {
+                return DropdownMenuItem(
+                  value: items,
+                  child: Text(items),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  dropdownvalue = newValue!;
+                });
+              },
+            ),
+            title: Text("Date: $today"),
+            subtitle: Text('Amount : 5000'),
+          ),
+          Divider(),
+          ListTile(
+            trailing: DropdownButton(
+              value: dropdownvalue,
+              icon: const Icon(Icons.keyboard_arrow_down),
+              items: items.map((String items) {
+                return DropdownMenuItem(
+                  value: items,
+                  child: Text(items),
+                );
+              }).toList(),
+              onChanged: (String? newValue) {
+                setState(() {
+                  dropdownvalue = newValue!;
+                });
+              },
+            ),
+            title: Text("Date: $today"),
+            subtitle: Text('Amount : 5000'),
+          ),
+          Divider(),
+        ],
       ),
     );
   }

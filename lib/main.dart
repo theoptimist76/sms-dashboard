@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-
-import 'dashboard/dashboardpage.dart';
+import 'package:sms/dashboard/selectbank.dart';
 
 void main() {
   runApp(const MyApp());
@@ -14,7 +13,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: DashboardPage(),
+      home: SelectBank(),
     );
   }
 }
